@@ -1,0 +1,29 @@
+---
+version: '3.7'
+
+services:
+  api:
+    container_name: stock-info-api
+    build: .
+    command: >
+      uvicorn
+        stock_info_api.main:app
+        --host 0.0.0.0
+        --port 8000
+        --lifespan=on
+        --use-colors
+        --log-level debug
+        --reload
+    ports:
+      - 8000:8000
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+
+  redis:
+    container_name: redis-stock-info
+    image: redis:alpine
+    restart: always
+    ports:
+      - 6379:6379
