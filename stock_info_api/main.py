@@ -18,11 +18,18 @@ class TickerModel(BaseModel):
         return Ticker(self.symbol)
 
 
+class TickersModel(BaseModel):
+    tickers: List[TickerModel]
+
+    def create(self):
+        return [ticker.create() for ticker in self.tickers]
+
+
 @app.on_event("startup")
 async def startup_event():
     app.state.redis = init_redis_pool()
 
 
 @app.post("/ohlc")
-def ohlc(start_date: dt.date, end_date: dt.date, tickers: List[TickerModel]):
+def ohlc(start_date: dt.date, end_date: dt.date, tickers: TickersModel):
     print([start_date, end_date, tickers], flush=True)
