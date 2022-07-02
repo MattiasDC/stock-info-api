@@ -1,5 +1,7 @@
 import asyncio
+import datetime as dt
 
+from dateutil.rrule import DAILY, FR, MO, TH, TU, WE, rrule
 from stock_market.core import OHLC, OHLCFetcher
 from stock_market.core.ohlc import merge_ohlcs
 from utils.logging import get_logger
@@ -18,29 +20,47 @@ class RedisOHLCFetcher(OHLCFetcher):
         return None if ohlc_json is None else OHLC.from_json(ohlc_json)
 
     async def fetch_single(self, start_date, end_date, ticker):
+        assert start_date <= end_date
+        if start_date == end_date:
+            return ticker, None
+
         ohlc = await self.fetch_from_cache(ticker)
 
         hit_or_miss = "hit"
-        if ohlc is None or ohlc.start > start_date or ohlc.end < end_date:
+        ohlc_end_next_business_day = rrule(
+            DAILY, dtstart=ohlc.end, byweekday=(MO, TU, WE, TH, FR)
+        )[1]
+
+        if (
+            ohlc is None
+            or ohlc.start > start_date
+            or ohlc_end_next_business_day.date() < end_date
+        ):
             hit_or_miss = "miss"
 
             fetched_ohlc = await self.delegate.fetch_ohlc(
-                [(start_date, end_date, ticker)]
+                [
+                    (
+                        start_date - dt.timedelta(days=30),
+                        end_date + dt.timedelta(days=30),
+                        ticker,
+                    )
+                ]
             )
-            if fetched_ohlc is None:
+
+            if fetched_ohlc is None or fetched_ohlc[0][1] is None:
+                logger.warning(
+                    f"Could not fetch ohlc data for: {ticker}, {start_date}, {end_date}"
+                )
                 return ticker, None
             assert len(fetched_ohlc) == 1
 
             ohlc = merge_ohlcs(ohlc, fetched_ohlc[0][1])
-
-            # should we asyncio.create_task instead of await?
+            # should we use asyncio.create_task instead of await?
             await self.redis.set(ticker.symbol, ohlc.to_json())
 
-        logger.debug(
-            f"Cache {hit_or_miss}: ticker '{ticker}', start date '{start_date}', end"
-            f" date '{end_date}'"
-        )
-        return ticker, ohlc
+        logger.debug(f"Cache {hit_or_miss}: {ticker}, {start_date}, {end_date}")
+        return ticker, ohlc.trim(start_date, end_date)
 
     async def fetch_ohlc(self, requests):
         tasks = []

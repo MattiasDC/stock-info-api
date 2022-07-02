@@ -1,7 +1,8 @@
 import datetime as dt
+from http import HTTPStatus
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel, constr
 from stock_market.core import Ticker
 from stock_market.ext.fetcher import YahooOHLCFetcher
@@ -45,5 +46,13 @@ async def ohlc(requests: RequestsModel):
     ohlc_results = await fetcher.fetch_ohlc(
         ((r.start_date, r.end_date, r.ticker.create()) for r in requests.requests)
     )
-    # print(list(ohlc_results))
-    return [(t.to_json(), o.to_json()) for t, o in ohlc_results]
+    if ohlc_results is None:
+        return Response(status_code=HTTPStatus.NO_CONTENT.value)
+
+    json_results = [
+        (t.to_json(), o.to_json()) for t, o in ohlc_results if o is not None
+    ]
+    if len(json_results) == 0:
+        return Response(status_code=HTTPStatus.NO_CONTENT.value)
+
+    return json_results
