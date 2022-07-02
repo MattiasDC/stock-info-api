@@ -4,6 +4,7 @@ from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel, constr
 from stock_market.core import Ticker
+from stock_market.ext.fetcher import YahooOHLCFetcher
 
 from .config import get_settings
 from .redis import init_redis_pool
@@ -18,11 +19,14 @@ class TickerModel(BaseModel):
         return Ticker(self.symbol)
 
 
-class TickersModel(BaseModel):
-    tickers: List[TickerModel]
+class RequestModel(BaseModel):
+    ticker: TickerModel
+    start_date: dt.date
+    end_date: dt.date
 
-    def create(self):
-        return [ticker.create() for ticker in self.tickers]
+
+class RequestsModel(BaseModel):
+    requests: List[RequestModel]
 
 
 @app.on_event("startup")
@@ -31,5 +35,10 @@ async def startup_event():
 
 
 @app.post("/ohlc")
-def ohlc(start_date: dt.date, end_date: dt.date, tickers: TickersModel):
-    print([start_date, end_date, tickers], flush=True)
+async def ohlc(requests: RequestsModel):
+    fetcher = YahooOHLCFetcher()
+    ohlc_results = await fetcher.fetch_ohlc(
+        ((r.start_date, r.end_date, r.ticker.create()) for r in requests.requests)
+    )
+    print(ohlc_results)
+    return [(t.to_json(), o.to_json()) for t, o in ohlc_results]
