@@ -8,6 +8,7 @@ from stock_market.ext.fetcher import YahooOHLCFetcher
 
 from .config import get_settings
 from .redis import init_redis_pool
+from .redis_ohlc_fetcher import RedisOHLCFetcher
 
 app = FastAPI(title="Stock Info API")
 
@@ -34,10 +35,15 @@ async def startup_event():
     app.state.redis = init_redis_pool()
 
 
+def create_fetcher(app):
+    return RedisOHLCFetcher(app.state.redis, YahooOHLCFetcher())
+
+
 @app.post("/ohlc")
 async def ohlc(requests: RequestsModel):
-    fetcher = YahooOHLCFetcher()
+    fetcher = create_fetcher(app)
     ohlc_results = await fetcher.fetch_ohlc(
         ((r.start_date, r.end_date, r.ticker.create()) for r in requests.requests)
     )
+    # print(list(ohlc_results))
     return [(t.to_json(), o.to_json()) for t, o in ohlc_results]
