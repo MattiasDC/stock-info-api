@@ -40,5 +40,4 @@ async def ohlc(requests: RequestsModel):
     ohlc_results = await fetcher.fetch_ohlc(
         ((r.start_date, r.end_date, r.ticker.create()) for r in requests.requests)
     )
-    print(ohlc_results)
     return [(t.to_json(), o.to_json()) for t, o in ohlc_results]
