@@ -2,6 +2,9 @@ import asyncio
 
 from stock_market.core import OHLC, OHLCFetcher
 from stock_market.core.ohlc import merge_ohlcs
+from utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class RedisOHLCFetcher(OHLCFetcher):
@@ -17,7 +20,10 @@ class RedisOHLCFetcher(OHLCFetcher):
     async def fetch_single(self, start_date, end_date, ticker):
         ohlc = await self.fetch_from_cache(ticker)
 
+        hit_or_miss = "hit"
         if ohlc is None or ohlc.start > start_date or ohlc.end < end_date:
+            hit_or_miss = "miss"
+
             fetched_ohlc = await self.delegate.fetch_ohlc(
                 [(start_date, end_date, ticker)]
             )
@@ -29,6 +35,11 @@ class RedisOHLCFetcher(OHLCFetcher):
 
             # should we asyncio.create_task instead of await?
             await self.redis.set(ticker.symbol, ohlc.to_json())
+
+        logger.debug(
+            f"Cache {hit_or_miss}: ticker '{ticker}', start date '{start_date}', end"
+            f" date '{end_date}'"
+        )
         return ticker, ohlc
 
     async def fetch_ohlc(self, requests):
