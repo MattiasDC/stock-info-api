@@ -27,14 +27,12 @@ class RedisOHLCFetcher(OHLCFetcher):
         ohlc = await self.fetch_from_cache(ticker)
 
         hit_or_miss = "hit"
-        ohlc_end_next_business_day = rrule(
-            DAILY, dtstart=ohlc.end, byweekday=(MO, TU, WE, TH, FR)
-        )[1]
 
         if (
             ohlc is None
             or ohlc.start > start_date
-            or ohlc_end_next_business_day.date() < end_date
+            or rrule(DAILY, dtstart=ohlc.end, byweekday=(MO, TU, WE, TH, FR))[1].date()
+            < end_date
         ):
             hit_or_miss = "miss"
 
