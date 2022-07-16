@@ -1,7 +1,6 @@
 import asyncio
 import datetime as dt
 
-from dateutil.rrule import DAILY, FR, MO, TH, TU, WE, rrule
 from stock_market.core import OHLC, OHLCFetcher
 from stock_market.core.ohlc import merge_ohlcs
 from utils.logging import get_logger
@@ -28,11 +27,11 @@ class RedisOHLCFetcher(OHLCFetcher):
 
         hit_or_miss = "hit"
 
+        trimmed_ohlc = ohlc.trim(start_date, end_date) if ohlc is not None else None
         if (
-            ohlc is None
-            or ohlc.start > start_date
-            or rrule(DAILY, dtstart=ohlc.end, byweekday=(MO, TU, WE, TH, FR))[1].date()
-            < end_date
+            trimmed_ohlc is None
+            or trimmed_ohlc.start > start_date
+            or trimmed_ohlc.end < end_date
         ):
             hit_or_miss = "miss"
 
