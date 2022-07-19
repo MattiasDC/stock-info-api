@@ -16,6 +16,9 @@ class Settings(BaseSettings):
         days=os.getenv("REDIS_ENGINE_EXPIRATION_DAYS", 30)
     )
     max_ticker_symbol_length: int = os.getenv("MAX_TICKER_SYMBOL_LENGTH", 10)
+    max_days_between_ticker_data_cache: int = os.getenv(
+        "MAX_DAYS_BETWEEN_TICKER_DATA_CACHE", 7
+    )
 
 
 @cache
