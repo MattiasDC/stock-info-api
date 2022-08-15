@@ -18,9 +18,10 @@ jobs:
           then
             tag=latest-dev
           fi
+          echo "tag=$tag" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - name: Build the Docker image
-        run: docker build . --tag xelicon/stock-info-api:$tag
+        run: docker build . --tag xelicon/stock-info-api:${{ env.tag }}
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -30,4 +31,4 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: xelicon/stock-info-api:$tag
+          tags: xelicon/stock-info-api:${{ env.tag }}
