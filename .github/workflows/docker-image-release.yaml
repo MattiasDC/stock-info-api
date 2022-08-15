@@ -1,17 +1,17 @@
 ---
-name: Docker Image CI
+name: Docker Image Latest Dev
 
 on:
-  push:
-    branches: master
+  release:
+    types: [published]
 
 jobs:
-  build:
+  build-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Build the Docker image
-        run: docker build .  --tag xelicon/stock-info-api:latest
+        run: docker build . --tag xelicon/stock-info-api:${{  github.ref_name }}
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -21,4 +21,4 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: xelicon/stock-info-api:latest
+          tags: xelicon/stock-info-api:${{  github.ref_name }}
