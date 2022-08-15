@@ -2,10 +2,10 @@ import asyncio
 import datetime as dt
 
 import pandas as pd
+from simputils.algos import inverse_ranges, rangify
+from simputils.logging import get_logger
 from stock_market.core import OHLC, OHLCFetcher
 from stock_market.core.ohlc import merge_ohlcs
-from utils.algos import inverse_ranges, rangify
-from utils.logging import get_logger
 
 from .config import get_settings
 
