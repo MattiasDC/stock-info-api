@@ -14,7 +14,7 @@ jobs:
       - name: Extract docker tag
         run: |
           tag=${{  github.ref_name }}
-          if [ $tag = master]
+          if [ $tag = master ]
           then
             tag=latest-dev
           fi
